@@ -15,16 +15,19 @@ package org.codice.countrycode.mapping;
 
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -76,13 +79,28 @@ public class CsvMappingStrategy implements MappingStrategy {
     this.standardRegistry = standardRegistry;
 
     URL fileUrl = this.getClass().getClassLoader().getResource(file);
+    System.out.println(fileUrl);
     if (fileUrl == null) {
       LOGGER.debug("Unable to get file for [{}].", file);
       throw new IllegalArgumentException(String.format("Unable to get file for [%s]", file));
     }
 
     try {
-      filePath = Paths.get(new URI(fileUrl.toString()));
+      Map<String, String> env = new HashMap<>();
+      env.put("create", "true");
+      FileSystems.newFileSystem(fileUrl.toURI(), env);
+    } catch (IOException e) {
+      //something
+    } catch (URISyntaxException e) {
+      // something else
+    } catch (IllegalArgumentException e) {
+      // something even else
+    } catch (FileSystemAlreadyExistsException e) {
+      // something more else
+    }
+
+    try {
+      filePath = Paths.get(fileUrl.toURI());
     } catch (URISyntaxException e) {
       LOGGER.debug("Error creating path to [{}].", file, e);
       throw new IllegalArgumentException(String.format("Unable to get path for file [%s]", file));
